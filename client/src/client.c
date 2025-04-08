@@ -1,7 +1,8 @@
 #include "client.h"
+#include <readline/readline.h>
+#include <readline/history.h>
 
-int main(void)
-{
+int main(void) {
 	/*---------------------------------------------------PARTE 2-------------------------------------------------------------*/
 
 	int conexion;
@@ -15,10 +16,11 @@ int main(void)
 	/* ---------------- LOGGING ---------------- */
 
 	logger = iniciar_logger();
-
+	
 	// Usando el logger creado previamente
 	// Escribi: "Hola! Soy un log"
 
+	log_info(logger, "Hola! Soy un log");
 
 	/* ---------------- ARCHIVOS DE CONFIGURACION ---------------- */
 
@@ -52,36 +54,50 @@ int main(void)
 	// Proximamente
 }
 
-t_log* iniciar_logger(void)
-{
+t_log* iniciar_logger(void) {
 	t_log* nuevo_logger;
+	nuevo_logger = log_create("tp0.log", "TP0", true, LOG_LEVEL_INFO);
+
+	// "tp0.log" → nombre del archivo donde se guarda el log.
+	// "TP0" → nombre del programa (puede ser cualquier string).
+	// true → indica que también se imprime por consola.
+	// LOG_LEVEL_INFO → nivel mínimo de log que se va a mostrar (hay DEBUG, INFO, ERROR, etc).
 
 	return nuevo_logger;
 }
 
-t_config* iniciar_config(void)
-{
-	t_config* nuevo_config;
+t_config* iniciar_config(void) { 
+	t_config* nuevo_config = config_create("cliente.config");
+
+	if (nuevo_config == NULL) {
+		printf("No se pudo abrir el archivo de configuración\n");
+		abort();
+	}
+
+	char* valor = config_get_string_value(nuevo_config, "CLAVE");
+	printf("Valor de CLAVE: %s\n", valor);
 
 	return nuevo_config;
 }
 
-void leer_consola(t_log* logger)
-{
+void leer_consola(t_log* logger) {
 	char* leido;
 
 	// La primera te la dejo de yapa
 	leido = readline("> ");
 
 	// El resto, las vamos leyendo y logueando hasta recibir un string vacío
-
+	while (strcmp(leido, "") != 0) {
+		log_info(logger, "%s", leido);
+		free(leido);
+		leido = readline("> ");
+	}
 
 	// ¡No te olvides de liberar las lineas antes de regresar!
-
+	free(leido);
 }
 
-void paquete(int conexion)
-{
+void paquete(int conexion) {
 	// Ahora toca lo divertido!
 	char* leido;
 	t_paquete* paquete;
@@ -93,8 +109,10 @@ void paquete(int conexion)
 	
 }
 
-void terminar_programa(int conexion, t_log* logger, t_config* config)
-{
+void terminar_programa(int conexion, t_log* logger, t_config* config) {
 	/* Y por ultimo, hay que liberar lo que utilizamos (conexion, log y config) 
 	  con las funciones de las commons y del TP mencionadas en el enunciado */
+
+	log_destroy(logger);
+	config_destroy(config);
 }

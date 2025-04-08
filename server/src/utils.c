@@ -2,10 +2,9 @@
 
 t_log* logger;
 
-int iniciar_servidor(void)
-{
+int iniciar_servidor(void) {
 	// Quitar esta línea cuando hayamos terminado de implementar la funcion
-	assert(!"no implementado!");
+	// assert(!"no implementado!");
 
 	int socket_servidor;
 
@@ -16,13 +15,20 @@ int iniciar_servidor(void)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
-	getaddrinfo(NULL, PUERTO, &hints, &servinfo);
+	int errAdd = getaddrinfo(NULL, PUERTO, &hints, &servinfo); // Success = 0  || "Address already in use" => si uno inicia un servidor después de haber finalizado otro en el mismo puerto
+	printf("errAdd %i ", errAdd);
 
 	// Creamos el socket de escucha del servidor
+	socket_servidor = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_flags);
+	// se suele llamar fd_escucha => file descriptor - es simplemente el descriptor de archivo del socket que "escucha" conexiones entrantes. Es decir, es el socket servidor.
 
 	// Asociamos el socket a un puerto
+	int errBind = bind(socket_servidor, servinfo->ai_addr, servinfo->ai_addrlen);
+	printf("errBind %i ", errBind);	
 
 	// Escuchamos las conexiones entrantes
+	int errListen = listen(socket_servidor, SOMAXCONN);
+	printf("errListen %i ", errListen);	
 
 	freeaddrinfo(servinfo);
 	log_trace(logger, "Listo para escuchar a mi cliente");
@@ -30,32 +36,28 @@ int iniciar_servidor(void)
 	return socket_servidor;
 }
 
-int esperar_cliente(int socket_servidor)
-{
+int esperar_cliente(int socket_servidor) {
 	// Quitar esta línea cuando hayamos terminado de implementar la funcion
-	assert(!"no implementado!");
+	//assert(!"no implementado!");
 
 	// Aceptamos un nuevo cliente
-	int socket_cliente;
+	int socket_cliente = accept(socket_servidor, NULL, NULL);
 	log_info(logger, "Se conecto un cliente!");
 
 	return socket_cliente;
 }
 
-int recibir_operacion(int socket_cliente)
-{
+int recibir_operacion(int socket_cliente) {
 	int cod_op;
 	if(recv(socket_cliente, &cod_op, sizeof(int), MSG_WAITALL) > 0)
 		return cod_op;
-	else
-	{
+	else {
 		close(socket_cliente);
 		return -1;
 	}
 }
 
-void* recibir_buffer(int* size, int socket_cliente)
-{
+void* recibir_buffer(int* size, int socket_cliente) {
 	void * buffer;
 
 	recv(socket_cliente, size, sizeof(int), MSG_WAITALL);
@@ -65,16 +67,14 @@ void* recibir_buffer(int* size, int socket_cliente)
 	return buffer;
 }
 
-void recibir_mensaje(int socket_cliente)
-{
+void recibir_mensaje(int socket_cliente) {
 	int size;
 	char* buffer = recibir_buffer(&size, socket_cliente);
 	log_info(logger, "Me llego el mensaje %s", buffer);
 	free(buffer);
 }
 
-t_list* recibir_paquete(int socket_cliente)
-{
+t_list* recibir_paquete(int socket_cliente) {
 	int size;
 	int desplazamiento = 0;
 	void * buffer;
@@ -82,8 +82,7 @@ t_list* recibir_paquete(int socket_cliente)
 	int tamanio;
 
 	buffer = recibir_buffer(&size, socket_cliente);
-	while(desplazamiento < size)
-	{
+	while(desplazamiento < size) {
 		memcpy(&tamanio, buffer + desplazamiento, sizeof(int));
 		desplazamiento+=sizeof(int);
 		char* valor = malloc(tamanio);
